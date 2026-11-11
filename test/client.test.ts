@@ -90,6 +90,13 @@ test('binary media is base64-encoded; 204 resolves to undefined', async () => {
       await zapi.device('d').messages.sendDocument('1', new TextEncoder().encode('ola mundo'), { fileName: 'a.txt' })
       assert.deepEqual(calls[0].body.media, { base64: 'b2xhIG11bmRv' })
       assert.equal(calls[0].body.fileName, 'a.txt')
+      await zapi.device('d').messages.sendSticker('1', { url: 'https://exemplo.com/gato.gif' }, { pack: 'Gatos', quotedMessageId: 'Q' })
+      await zapi.device('d').messages.sendSticker('1', { url: 'https://exemplo.com/gato.gif' })
+      assert.equal(calls[1].body.type, 'sticker')
+      assert.deepEqual(calls[1].body.sticker, { pack: 'Gatos' })
+      assert.equal(calls[1].body.pack, undefined)
+      assert.equal(calls[1].body.quotedMessageId, 'Q')
+      assert.equal(calls[2].body.sticker, undefined)
       assert.equal(await zapi.devices.delete('d'), undefined)
     },
   )

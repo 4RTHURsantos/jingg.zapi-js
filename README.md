@@ -38,6 +38,9 @@ const sent = await device.messages.sendText('5511999990000', 'Olá!')
 await device.messages.sendImage('5511999990000', { url: 'https://exemplo.com/foto.jpg' }, { caption: 'Veja' })
 await device.messages.sendDocument('5511999990000', await fs.readFile('boleto.pdf'), { fileName: 'boleto.pdf' })
 
+// figurinha: PNG, JPEG, WebP, GIF ou vídeo curto — a API converte (animada quando a origem é)
+await device.messages.sendSticker('5511999990000', { url: 'https://exemplo.com/gato.gif' }, { pack: 'Meu Pacote', author: 'Minha Empresa' })
+
 await device.messages.waitUntilSent(sent.id)     // opcional: aguarda sair da fila
 ```
 

@@ -18,6 +18,7 @@ import type {
   OutboundStatus,
   PresenceState,
   SendOptions,
+  StickerOptions,
   Webhook,
   WebhookDelivery,
   WebhookInput,
@@ -243,8 +244,14 @@ export class MessagesApi {
   sendDocument(to: string, media: MediaSource, options: MediaOptions & { fileName?: string } = {}) {
     return this.send({ to, type: 'document', media: mediaPayload(media) }, options)
   }
-  sendSticker(to: string, media: MediaSource, options: SendOptions & { mimetype?: string } = {}) {
-    return this.send({ to, type: 'sticker', media: mediaPayload(media) }, options)
+  /**
+   * Accepts PNG, JPEG, WebP, GIF or a short video: the API converts it to a 512×512 WebP, animated when
+   * the source is. `pack`, `author` and `emojis` are what the recipient sees when tapping the sticker.
+   */
+  sendSticker(to: string, media: MediaSource, options: StickerOptions = {}) {
+    const { pack, author, emojis, ...rest } = options
+    const sticker = pack || author || emojis?.length ? { pack, author, emojis } : undefined
+    return this.send({ to, type: 'sticker', media: mediaPayload(media), ...(sticker ? { sticker } : {}) }, rest)
   }
   sendLocation(to: string, location: { latitude: number; longitude: number; name?: string; address?: string }, options?: SendOptions) {
     return this.send({ to, type: 'location', ...location }, options)

@@ -125,7 +125,10 @@ export interface MediaInfo {
   width?: number
   height?: number
   ptt?: boolean
+  /** sticker: it moves */
   animated?: boolean
+  /** sticker: vector (Lottie) — the stored file is a .was archive, not a WebP */
+  lottie?: boolean
   key?: string
   /** presigned URL; expires — use device.messages.mediaUrl(id) for a fresh one */
   url?: string
@@ -142,7 +145,7 @@ export interface Message {
   isGroup: boolean
   pushName?: string
   timestamp: string
-  /** text, image, video, audio, document, sticker, location, contact, poll, button_reply, list_reply, group_invite, event, unknown */
+  /** text, image, video, audio, document, sticker, sticker_pack, location, contact, poll, button_reply, list_reply, group_invite, event, unknown */
   type: string
   contentType: string
   text?: string
@@ -151,6 +154,8 @@ export interface Message {
   contacts?: { name?: string; vcard?: string }[]
   poll?: { name?: string; options: string[]; selectableCount?: number }
   selection?: { id?: string; text?: string }
+  /** set when type is sticker_pack */
+  stickerPack?: { id?: string; name?: string; publisher?: string; count?: number }
   quoted?: { id: string; sender?: string }
   mentions?: string[]
   viewOnce?: boolean
@@ -201,6 +206,13 @@ export interface EventPage {
 
 /** A URL the worker downloads, inline base64, or raw bytes (encoded for you). */
 export type MediaSource = { url: string } | { base64: string } | Uint8Array | ArrayBuffer
+
+export interface StickerOptions extends SendOptions {
+  /** pack name shown when the recipient taps the sticker */
+  pack?: string
+  author?: string
+  emojis?: string[]
+}
 
 export interface SendOptions {
   /** reply quoting this message id */
