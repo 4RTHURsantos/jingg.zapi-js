@@ -18,7 +18,24 @@ export type EventType =
 
 export type DeviceStatus = 'disconnected' | 'connecting' | 'qr' | 'connected' | 'reconnecting' | 'logged_out'
 
+export interface DeviceSettings {
+  /**
+   * Emit `presence.update` (typing, recording, online) for every chat that writes to the device.
+   * The account then shows as online, and the phone stops notifying new messages.
+   */
+  presenceEvents?: boolean
+}
+
+export interface Reaction {
+  emoji: string
+  sender: string
+  senderAlt?: string | null
+  fromMe: boolean
+  timestamp: string
+}
+
 export interface Device {
+  settings: DeviceSettings
   id: string
   name: string
   desiredState: 'started' | 'stopped'
@@ -156,12 +173,15 @@ export interface Message {
   selection?: { id?: string; text?: string }
   /** set when type is sticker_pack */
   stickerPack?: { id?: string; name?: string; publisher?: string; count?: number }
-  quoted?: { id: string; sender?: string }
+  /** the message this one replies to; `type` and `text` describe the quoted message */
+  quoted?: { id: string; sender?: string; fromMe?: boolean; type?: string; text?: string }
   mentions?: string[]
   viewOnce?: boolean
   forwarded?: boolean
   outboundId?: string
   status?: string | null
+  /** current reactions; present on messages fetched from the API, not on events */
+  reactions?: Reaction[]
   raw?: unknown
 }
 
@@ -174,14 +194,40 @@ export interface EventDataMap {
   'message.receipt': { messageId: string; chat: string; user: string; status: string }
   'message.edited': { id: string; chat: string; fromMe: boolean; text?: string }
   'message.deleted': { id: string; chat: string; fromMe: boolean }
-  'message.reaction': { messageId: string; chat: string; emoji: string | null; fromMe: boolean; sender?: string }
+  'message.reaction': {
+    messageId: string
+    chat: string
+    /** whether the message reacted to was sent by the device */
+    messageFromMe: boolean
+    /** null when the reaction was removed */
+    emoji: string | null
+    previousEmoji?: string
+    removed: boolean
+    /** whether the device itself reacted */
+    fromMe: boolean
+    sender: string
+    senderAlt?: string
+    timestamp: string
+  }
   'message.poll_vote': { id: string; chat: string; fromMe: boolean; votes: { name: string; voters: string[] }[] }
   'message.failed': { outboundId: string; to: string; type?: string; error: string; attempts?: number }
   'group.updated': Record<string, unknown>
   'group.participants': Record<string, unknown> & { group: string; action: string }
   'group.join_request': Record<string, unknown> & { group: string }
   'call.update': Record<string, unknown>
-  'presence.update': { chat: string; presences: Record<string, unknown> }
+  'presence.update': {
+    chat: string
+    chatAlt?: string
+    /** who is typing — the chat itself in a 1:1 conversation, a member in a group */
+    participant: string
+    participantAlt?: string
+    isGroup: boolean
+    state: PresenceState
+    typing: boolean
+    recording: boolean
+    lastSeen?: string
+    timestamp: string
+  }
 }
 
 /** Discriminated union: narrowing on `type` gives a typed `data`. */

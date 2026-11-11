@@ -41,6 +41,10 @@ await device.messages.sendDocument('5511999990000', await fs.readFile('boleto.pd
 // figurinha: PNG, JPEG, WebP, GIF ou vídeo curto — a API converte (animada quando a origem é)
 await device.messages.sendSticker('5511999990000', { url: 'https://exemplo.com/gato.gif' }, { pack: 'Meu Pacote', author: 'Minha Empresa' })
 
+// responder e reagir a uma mensagem recebida (pelo id que veio no evento)
+await device.messages.replyText(msg.id, 'Combinado!')
+await device.messages.reactTo(msg.id, '👍')
+
 await device.messages.waitUntilSent(sent.id)     // opcional: aguarda sair da fila
 ```
 
@@ -69,6 +73,16 @@ app.post('/webhooks/whatsapp', express.raw({ type: 'application/json' }), async 
 })
 ```
 
+Em uma resposta, `event.data.quoted` traz `id`, `sender`, `fromMe`, `type` e `text` da mensagem citada. Reações chegam
+como `message.reaction` (`emoji` nulo quando removida). Para saber quando o contato está **digitando**, ligue a opção
+no dispositivo — a conta passa a aparecer online — e trate `presence.update`:
+
+```ts
+await device.updateSettings({ presenceEvents: true })
+// ...
+if (event.type === 'presence.update' && event.data.typing) console.log(event.data.participant, 'está digitando')
+```
+
 A entrega é *ao menos uma vez*: deduplique por `event.id` e ordene por `event.seq`. Para um processo único há o
 `EventDeduplicator` (em memória); com várias instâncias, grave o `id` no seu banco.
 
@@ -95,11 +109,11 @@ for await (const event of device.events.stream({ after: ultimoSeq, signal })) {
 | | |
 |---|---|
 | `zapi.devices` | `create`, `list`, `get`, `getOrCreate`, `delete` |
-| `zapi.device(id)` | `connect`, `disconnect`, `restart`, `logout`, `qr`, `qrPng`, `pairingCode`, `connectAndGetQr`, `waitUntilConnected`, `rotateKey`, `updateProfile`, `sendPresence`, `rejectCall` |
-| `.messages` | `sendText/Image/Video/Audio/Document/Sticker/Location/Contacts/Poll`, `react`, `edit`, `deleteForEveryone`, `send`, `outbound`, `listOutbound`, `cancel`, `retry`, `waitUntilSent`, `list`, `get`, `mediaUrl`, `markRead` |
+| `zapi.device(id)` | `connect`, `disconnect`, `restart`, `logout`, `qr`, `qrPng`, `pairingCode`, `connectAndGetQr`, `waitUntilConnected`, `rotateKey`, `rename`, `updateSettings`, `updateProfile`, `sendPresence`, `rejectCall` |
+| `.messages` | `sendText/Image/Video/Audio/Document/Sticker/Location/Contacts/Poll`, `reply`, `replyText`, `reactTo`, `removeReaction`, `react`, `edit`, `deleteForEveryone`, `send`, `outbound`, `listOutbound`, `cancel`, `retry`, `waitUntilSent`, `list`, `get`, `mediaUrl`, `markRead` |
 | `.webhooks` | `list`, `create`, `update`, `delete`, `ensure`, `test`, `deliveries`, `retryDelivery`, `retryFailedDeliveries` |
 | `.events` | `list`, `lastSeq`, `stream` |
-| `.contacts` | `check`, `pictureUrl`, `status`, `businessProfile`, `block`, `unblock`, `subscribePresence` |
+| `.contacts` | `check`, `pictureUrl`, `status`, `businessProfile`, `block`, `unblock`, `subscribePresence`, `unsubscribePresence` |
 | `.groups` | `list`, `get`, `create`, `update`, `add/removeParticipants`, `promote`, `demote`, `inviteLink`, `revokeInviteLink`, `inviteInfo`, `join`, `leave` |
 | funções | `parseWebhook`, `verifyWebhookSignature`, `EventDeduplicator` |
 

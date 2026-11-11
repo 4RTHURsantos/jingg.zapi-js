@@ -97,6 +97,18 @@ test('binary media is base64-encoded; 204 resolves to undefined', async () => {
       assert.equal(calls[1].body.pack, undefined)
       assert.equal(calls[1].body.quotedMessageId, 'Q')
       assert.equal(calls[2].body.sticker, undefined)
+      const m = zapi.device('d').messages
+      await m.replyText('MSG 1', 'Combinado', { mentions: ['1'] })
+      await m.reactTo('MSG 1', '👍')
+      await m.removeReaction('MSG 1')
+      const [reply, react, unreact] = calls.slice(3)
+      assert.equal(reply.url, '/v1/devices/d/messages/MSG%201/reply')
+      assert.equal(reply.body.text, 'Combinado')
+      assert.deepEqual(reply.body.mentions, ['1'])
+      assert.ok(reply.body.idempotencyKey)
+      assert.equal(react.url, '/v1/devices/d/messages/MSG%201/reaction')
+      assert.equal(react.body.emoji, '👍')
+      assert.deepEqual([unreact.method, unreact.url], ['DELETE', '/v1/devices/d/messages/MSG%201/reaction'])
       assert.equal(await zapi.devices.delete('d'), undefined)
     },
   )

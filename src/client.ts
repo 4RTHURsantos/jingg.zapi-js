@@ -5,6 +5,7 @@ import type {
   DeliveryStatus,
   Device,
   DeviceDetails,
+  DeviceSettings,
   EventPage,
   EventType,
   GroupMetadata,
@@ -82,7 +83,12 @@ export class DevicesApi {
   constructor(private readonly http: Http) {}
 
   /** Requires the admin key. `connect` defaults to true: the device starts producing QR codes right away. */
-  create(input: { name: string; connect?: boolean; webhook?: Pick<WebhookInput, 'url' | 'secret' | 'events'> }): Promise<CreatedDevice> {
+  create(input: {
+    name: string
+    connect?: boolean
+    webhook?: Pick<WebhookInput, 'url' | 'secret' | 'events'>
+    settings?: DeviceSettings
+  }): Promise<CreatedDevice> {
     return this.http.post('/v1/devices', input)
   }
 
@@ -133,6 +139,10 @@ export class DeviceClient {
   }
   rename(name: string): Promise<Device> {
     return this.http.patch(this.base, { name })
+  }
+  /** Takes effect immediately. `{ presenceEvents: true }` turns on typing notifications (see DeviceSettings). */
+  updateSettings(settings: DeviceSettings): Promise<Device> {
+    return this.http.patch(this.base, { settings })
   }
   /** Starts the connection. Without a saved session the device begins issuing QR codes. */
   connect(): Promise<Device> {
@@ -263,6 +273,26 @@ export class MessagesApi {
     return this.send({ to, type: 'poll', poll }, options)
   }
   /** An empty emoji removes the reaction. */
+  /**
+   * Replies to a stored message, quoting it; the destination is that message's chat.
+   * `body` is any message: `{ text }`, `{ type: 'image', media: { url } }`, ...
+   */
+  reply(messageId: string, body: { type?: string; [key: string]: unknown }, options: SendOptions = {}): Promise<OutboundMessage> {
+    const { idempotencyKey = newKey(), ...rest } = options
+    return this.http.post(`${this.base}/messages/${enc(messageId)}/reply`, { ...body, ...rest, idempotencyKey }, { idempotent: true })
+  }
+  replyText(messageId: string, text: string, options?: SendOptions) {
+    return this.reply(messageId, { text }, options)
+  }
+  /** Reacts to a stored message; reacting again replaces the previous emoji. */
+  reactTo(messageId: string, emoji: string): Promise<OutboundMessage> {
+    const body = { emoji, idempotencyKey: newKey() }
+    return this.http.post(`${this.base}/messages/${enc(messageId)}/reaction`, body, { idempotent: true })
+  }
+  removeReaction(messageId: string): Promise<OutboundMessage> {
+    return this.http.delete(`${this.base}/messages/${enc(messageId)}/reaction`)
+  }
+  /** Low-level form of `reactTo` for messages the API has not stored. An empty emoji removes the reaction. */
   react(chat: string, messageId: string, emoji: string, options?: SendOptions) {
     return this.send({ to: chat, type: 'reaction', messageId, emoji }, options)
   }
@@ -459,8 +489,12 @@ export class ContactsApi {
     await this.http.post(`${this.base}/contacts/${enc(jid)}/block`, { action: 'unblock' })
   }
   /** Start receiving `presence.update` events for this contact. */
+  /** Follow a chat that has not written yet. With `presenceEvents` on, chats that write are followed automatically. */
   async subscribePresence(jid: string): Promise<void> {
     await this.http.post(`${this.base}/contacts/${enc(jid)}/presence/subscribe`)
+  }
+  async unsubscribePresence(jid: string): Promise<void> {
+    await this.http.delete(`${this.base}/contacts/${enc(jid)}/presence/subscribe`)
   }
 }
 
