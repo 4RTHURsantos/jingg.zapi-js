@@ -1,6 +1,6 @@
 # @jingg/zapi
 
-Cliente TypeScript/JavaScript para a Jingg Zapi — API de WhatsApp multi-dispositivo. Você informa a
+Cliente TypeScript/JavaScript para a [Jingg Zapi](https://github.com/4RTHURsantos/jingg.zapi) — API de WhatsApp multi-dispositivo. Você informa a
 URL e a chave; a biblioteca cuida de autenticação, retentativas, idempotência dos envios, tipagem dos eventos e
 validação de webhooks.
 
